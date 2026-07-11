@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>For You, From Far Away</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFF6F3;
+    --card:#FFFFFF;
+    --accent:#D97A87;
+    --accent-deep:#B85C6B;
+    --text:#3A2E2E;
+    --muted:#a89494;
+    --ok:#8FB79A;
+    --gold:#E3B65C;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100vh; background: var(--bg); color: var(--text);
+    font-family:'Nunito', sans-serif;
+    display:flex; align-items:center; justify-content:center; padding: 6vh 5vw;
+  }
+  h1,h2,.headline{ font-family:'Playfair Display', serif; font-style:italic; font-weight:600; line-height:1.25; margin:0; }
+
+  .app{ width:100%; max-width:440px; }
+
+  .dots{ display:flex; gap:8px; justify-content:center; margin-bottom:30px; }
+  .dots{font-family:'Nunito', sans-serif; font-weight:700; font-size:1rem; color:#fff; }
+  .dot{ width:8px; height:8px; border-radius:50%; background:#f0d9d9; transition: background .3s ease, transform .3s ease; }
+  .dot.active{ background: var(--accent); transform: scale(1.3); }
+  .dot.done{ background: var(--ok); }
+
+  .stage{ display:none; opacity:0; transform: translateY(10px); transition: opacity .5s ease, transform .5s ease; }
+  .stage.show{ display:block; }
+  .stage.in{ opacity:1; transform: translateY(0); }
+
+  .card{
+    background: var(--card); border-radius:22px; padding: 44px 32px; text-align:center;
+    box-shadow: 0 20px 40px rgba(184,92,107,.12);
+  }
+  .eyebrow{ font-size:.75rem; letter-spacing:.12em; text-transform:uppercase; color: var(--accent-deep); font-weight:700; margin-bottom:12px; }
+  .card h1{ font-size:1.6rem; margin-bottom:6px; }
+  .card p.sub{ color: var(--muted); font-size:1rem; margin: 10px 0 6px; line-height:1.5; }
+
+  .btn{
+    font-family:'Nunito', sans-serif; font-weight:700; font-size:1rem; color:#fff;
+    background: var(--accent); border:none; border-radius:30px; padding:14px 32px; cursor:pointer;
+    box-shadow: 0 8px 0 var(--accent-deep); transition: transform .12s ease, box-shadow .12s ease;
+    margin-top: 22px;
+  }
+  .btn:active{ transform: translateY(6px); box-shadow: 0 2px 0 var(--accent-deep); }
+
+  /* playful question options */
+  .options{ display:flex; flex-direction:column; gap:12px; margin-top: 26px; }
+  .opt{
+    font-family:'Nunito', sans-serif; font-size:1.02rem; font-weight:700; color: var(--accent-deep);
+    background: var(--bg); border:2px solid transparent; border-radius:30px; padding:14px 18px;
+    cursor:pointer; transition: border-color .2s ease, transform .15s ease, background .2s ease;
+  }
+  .opt:hover{ border-color: var(--accent); transform: translateY(-1px); }
+  .opt.picked{ background:#f6dee1; border-color: var(--accent); }
+  .opt.nope{ animation: shake .4s ease; }
+  @keyframes shake{ 0%,100%{ transform: translateX(0); } 25%{ transform: translateX(-6px); } 75%{ transform: translateX(6px); } }
+  .feedback{ margin-top:18px; font-family:'Playfair Display', serif; font-style:italic; color: var(--accent-deep); font-size:1.05rem; min-height:24px; opacity:0; transition: opacity .4s ease; }
+  .feedback.show{ opacity:1; }
+
+/* scene galleries */
+  .gallery-card{ max-width: 460px; }
+  .gallery-intro{ color: var(--muted); font-size: .95rem; line-height:1.5; margin: 8px 0 22px; }
+  .gallery{ display:flex; gap:20px; flex-wrap:wrap; justify-content:center; }
+  .photo-holder{ width:130px; display:flex; flex-direction:column; align-items:center; }
+  .photo-frame{
+    width:130px; height:130px; border-radius:14px; border:2px solid var(--accent);
+    background-color: var(--bg); overflow:hidden;
+  }
+  .photo-frame img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .photo-caption{
+    margin-top:10px; font-family:'Playfair Display', serif; font-style:italic; font-size:.85rem;
+    text-align:center; color: var(--text); line-height:1.35; outline:none;
+    border-bottom:1px dashed transparent; transition: border-color .3s ease;
+  }
+  .photo-caption:hover, .photo-caption:focus{ border-bottom-color: var(--accent); }
+
+  /* candles / make a wish */
+  .cake{ display:flex; gap:18px; margin-top:26px; flex-wrap:wrap; justify-content:center; }
+  .candle{ background:none; border:none; cursor:pointer; padding:0; display:flex; flex-direction:column; align-items:center; width:22px; }
+  .flame{
+    width:10px; height:14px; border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;
+    background: radial-gradient(circle at 50% 70%, #fff2c4, var(--gold) 55%, #c1801f 100%);
+    box-shadow: 0 0 12px 3px rgba(227,182,92,.55);
+    transform-origin:bottom center; animation: flicker 1.6s ease-in-out infinite;
+    transition: opacity .3s ease, transform .3s ease;
+  }
+  @keyframes flicker{ 0%,100%{ transform: scaleY(1) rotate(-1deg); } 50%{ transform: scaleY(1.08) rotate(2deg); } }
+  .candle.out .flame{ opacity:0; transform: scaleY(0); }
+  .stick{ width:8px; height:38px; margin-top:2px; background: repeating-linear-gradient(180deg, var(--accent) 0 5px, var(--gold) 5px 9px); border-radius:2px; }
+  .smoke{ width:4px; height:4px; border-radius:50%; background: rgba(160,150,150,.6); opacity:0; margin-top:2px; }
+  .candle.out .smoke{ animation: smoke-up 1.2s ease-out; }
+  @keyframes smoke-up{ 0%{ opacity:.7; transform: translateY(0) scale(1); } 100%{ opacity:0; transform: translateY(-26px) scale(3); } }
+  .candles-msg{ margin-top:26px; font-family:'Playfair Display', serif; font-style:italic; font-size:1.1rem; color: var(--accent-deep); opacity:0; transition: opacity 1s ease; }
+  .candles-msg.show{ opacity:1; }
+
+
+  /* candles / make a wish */
+  .cake{ display:flex; gap:18px; margin-top:26px; flex-wrap:wrap; justify-content:center; }
+  .candle{ background:none; border:none; cursor:pointer; padding:0; display:flex; flex-direction:column; align-items:center; width:22px; }
+  .flame{
+    width:10px; height:14px; border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;
+    background: radial-gradient(circle at 50% 70%, #fff2c4, var(--gold) 55%, #c1801f 100%);
+    box-shadow: 0 0 12px 3px rgba(227,182,92,.55);
+    transform-origin:bottom center; animation: flicker 1.6s ease-in-out infinite;
+    transition: opacity .3s ease, transform .3s ease;
+  }
+  @keyframes flicker{ 0%,100%{ transform: scaleY(1) rotate(-1deg); } 50%{ transform: scaleY(1.08) rotate(2deg); } }
+  .candle.out .flame{ opacity:0; transform: scaleY(0); }
+  .stick{ width:8px; height:38px; margin-top:2px; background: repeating-linear-gradient(180deg, var(--accent) 0 5px, var(--gold) 5px 9px); border-radius:2px; }
+  .smoke{ width:4px; height:4px; border-radius:50%; background: rgba(160,150,150,.6); opacity:0; margin-top:2px; }
+  .candle.out .smoke{ animation: smoke-up 1.2s ease-out; }
+  @keyframes smoke-up{ 0%{ opacity:.7; transform: translateY(0) scale(1); } 100%{ opacity:0; transform: translateY(-26px) scale(3); } }
+  .candles-msg{ margin-top:26px; font-family:'Playfair Display', serif; font-style:italic; font-size:1.1rem; color: var(--accent-deep); opacity:0; transition: opacity 1s ease; }
+  .candles-msg.show{ opacity:1; }
+
+  /* wish lantern */
+  .wish-form{ display:flex; gap:8px; margin-top:20px; flex-wrap:wrap; justify-content:center; }
+  .wish-form input{
+    flex:1; min-width:180px; background: var(--bg); border:2px solid #f0d9d9; border-radius:20px;
+    font-family:'Nunito', sans-serif; font-size:.95rem; color:var(--text); padding:10px 16px; outline:none;
+  }
+  .wish-form input:focus{ border-color: var(--accent); }
+  .wish-form .btn{ margin-top:0; padding:10px 22px; }
+  .wish-sky{ position:relative; width:100%; height:70px; margin-top:6px; }
+  .lantern{
+    position:absolute; left:50%; bottom:0; transform: translateX(-50%);
+    font-family:'Playfair Display', serif; font-style:italic; color: var(--accent-deep);
+    white-space:nowrap; opacity:0; animation: rise 3.2s ease-out forwards; font-size:.92rem;
+  }
+  @keyframes rise{ 0%{ opacity:0; transform: translate(-50%,16px) scale(.9); } 15%{ opacity:1; } 100%{ opacity:0; transform: translate(-50%,-110px) scale(1.05); } }
+
+  
+  /* heart hunt */
+  .grid{ display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin: 22px 0 4px; }
+  .cell{
+    aspect-ratio:1; border-radius:12px; background: var(--bg); border:none; cursor:pointer;
+    font-size:1.3rem; display:flex; align-items:center; justify-content:center;
+    transition: background .2s ease, transform .2s ease;
+  }
+  .cell:hover{ transform: scale(1.05); }
+  .cell.tried{ background:#f7e8e8; cursor:default; }
+  .cell.found{ background:#eaf5ee; }
+
+  /* final */
+  .final-letter{ text-align:left; font-size:1.05rem; line-height:1.75; color: var(--text); margin-top: 6px; }
+  .final-letter .to-name{ font-family:'Playfair Display', serif; font-style:italic; color: var(--accent-deep); font-size:1.3rem; }
+  .final-letter .signoff{ font-family:'Playfair Display', serif; font-style:italic; margin-top:18px; font-size:1.2rem; color: var(--accent-deep); }
+  .hearts-fall{ position:fixed; top:-30px; font-size:1.4rem; z-index:20; animation: fall linear forwards; pointer-events:none; }
+  @keyframes fall{ to{ transform: translateY(112vh) rotate(200deg); opacity:.2; } }
+
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+  button:focus-visible{ outline:2px solid var(--accent-deep); outline-offset:3px; }
+</style>
+</head>
+<body>
+
+
+<div class="app">
+  <div class="dots" id="dots"></div>
+
+  <!-- STAGE 0: COVER -->
+  <div class="stage" data-stage="0">
+    <div class="card" style="position:relative;">
+      <div class="eyebrow">A little something</div>
+      <h1>I made you something.</h1>
+      <p class="sub">Just answer a few very important questions first.</p>
+      <button class="btn" onclick="nextStage()">Okay, fine</button>
+    </div>
+  </div>
+
+  <!-- STAGE 1: DO YOU WANT YOUR GIFT -->
+  <div class="stage" data-stage="1">
+    <div class="card">
+      <h1>Do you want your gift?</h1>
+      <div class="options" id="q1Options"></div>
+      <div class="feedback" id="q1Feedback"></div>
+    </div>
+  </div>
+
+  <!-- STAGE 2: DO YOU LOVE ME -->
+  <div class="stage" data-stage="2">
+    <div class="card">
+      <h1>Do you love me?</h1>
+      <div class="options" id="q2Options"></div>
+      <div class="feedback" id="q2Feedback"></div>
+     </div>
+  </div>
+
+  <!-- STAGE 3: HOW MUCH DO YOU MISS ME -->
+  <div class="stage" data-stage="3">
+    <div class="card">
+      <h1>How much do you miss me today?</h1>
+      <div class="options" id="q3Options"></div>
+      <div class="feedback" id="q3Feedback"></div>
+    </div>
+  </div>
+
+  <!-- STAGE 4: PRIDE & PREJUDICE SCENES -->
+  <div class="stage" data-stage="4">
+    <div class="card gallery-card">
+      
+      <h1 style="font-size:1.3rem;">Mr. Darcy</h1>
+      <p class="gallery-intro">A glimse of us in their era.</p>
+      <div class="gallery" id="ppGallery"></div>
+      <button class="btn" onclick="nextStage()">Next</button>
+    </div>
+  </div>
+
+  <!-- STAGE 5: THE FRAGRANT FLOWER SCENES -->
+  <div class="stage" data-stage="5">
+    <div class="card gallery-card">
+      <div class="eyebrow">And a little bit this, too</div>
+      <h1 style="font-size:1.3rem;">The Fragrant Flower Blooms With Dignity</h1>
+      <p class="gallery-intro">A glimse of us in their world.</p>
+      <div class="gallery" id="flowerGallery"></div>
+      <button class="btn" onclick="nextStage()">Next</button>
+    </div>
+  </div>
+
+  <!-- STAGE 6: MAKE A WISH -->
+  <div class="stage" data-stage="6">
+    <div class="card">
+      <div class="eyebrow">Make a wish</div>
+      <h1 style="font-size:1.3rem;">Blow out the candles, one by one.</h1>
+      <div class="cake" id="cake"></div>
+      <div class="candles-msg" id="candlesMsg">Wish made. It's already on its way.</div>
+    </div>
+  </div>
+
+  <!-- STAGE 7: HEART HUNT -->
+  <div class="stage" data-stage="7">
+    <div class="card">
+      <div class="eyebrow">One last thing</div>
+      <h1 style="font-size:1.3rem;">I hid a heart in here for you.</h1>
+      <p class="sub">Tap around until you find it.</p>
+      <div class="grid" id="heartGrid"></div>
+    </div>
+  </div>
+
+  <!-- STAGE 8: FINAL -->
+  <div class="stage" data-stage="8">
+    <div class="card">
+      <div class="eyebrow">Okay. Here it is :p.</div>
+      <h1>Happy Birthday, Mr. Nehal.</h1>
+      <div class="final-letter" contenteditable="true" spellcheck="false">
+        <p>My dearest <span class="to-name">baka,</span>,</p>
+        <p>I wish you the happiest birthday, the most blessed year and a happy, healthy life aheadddd. There are so many things I would have said but truly there is no word suitable enough to describe the feelings inside. You are worth all the efforts and all the good things, never doubt yourself pookie. Did I ever tell you that your laugh is so beautiful? Keep laughing!! and smiling hehe.</p>
+        <p>Happy birthday. I'm so proud of you and so lucky to have you.</p>
+        <p class="signoff">Yours lovingly, Raiqua.</p>
+      </div>
+      <form class="wish-form" id="wishForm">
+        <input type="text" id="wishInput" placeholder="One wish for the days ahead…" maxlength="60" required>
+        <button class="btn" type="submit">Send it up</button>
+      </form>
+      <div class="wish-sky" id="wishSky"></div>
+      <button class="btn" id="hugBtn">Send a virtual hug 🤍</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   EDIT ME: click into the final letter above and personalize it.
+   You can also edit the option text below for each question.
+   ============================================================ */
+
+// ---------- stage navigation ----------
+const stages = Array.from(document.querySelectorAll('.stage'));
+const dotsWrap = document.getElementById('dots');
+let current = 0;
+stages.forEach(() => {
+  const d = document.createElement('div');
+  d.className = 'dot';
+  dotsWrap.appendChild(d);
+});
+const dotEls = Array.from(dotsWrap.children);
+function renderDots(){
+  dotEls.forEach((d, i) => {
+    d.classList.toggle('active', i === current);
+    d.classList.toggle('done', i < current);
+  });
+}
+function showStage(i){
+  stages.forEach(s => s.classList.remove('show','in'));
+  const target = stages[i];
+  target.classList.add('show');
+  requestAnimationFrame(()=> target.classList.add('in'));
+  current = i;
+  renderDots();
+}
+function nextStage(){ if(current < stages.length - 1) showStage(current + 1); }
+showStage(0);
+
+// ---------- helper: build a playful question ----------
+function buildPlayfulQuestion(optWrapId, feedbackId, options){
+  // options: array of { text, feedback, advance: true/false }
+  const wrap = document.getElementById(optWrapId);
+  const feedback = document.getElementById(feedbackId);
+  options.forEach(opt => {
+    const b = document.createElement('button');
+    b.className = 'opt';
+    b.textContent = opt.text;
+    b.addEventListener('click', () => {
+      feedback.textContent = opt.feedback;
+      feedback.classList.add('show');
+      if(opt.advance){
+        b.classList.add('picked');
+        Array.from(wrap.children).forEach(c => c.disabled = true);
+        setTimeout(nextStage, 1000);
+      } else {
+        b.classList.add('nope');
+        setTimeout(()=> b.classList.remove('nope'), 400);
+      }
+    });
+    wrap.appendChild(b);
+  });
+}
+
+// Q1: Do you want your gift?
+buildPlayfulQuestion('q1Options', 'q1Feedback', [
+  { text: "Yes please", feedback: "Sure cutie pieee!", advance: true },
+  { text: "Do you even have to ask?", feedback: "You baka.", advance: false },
+  { text: "I guess", feedback: "You guess!!?? You guess!!?? GUESS!!???", advance: false }
+]);
+
+// Q2: Do you love me?
+buildPlayfulQuestion('q2Options', 'q2Feedback', [
+  { text: "Yes", feedback: "Only yes? *insert teary eyes pouting sad emoji*", advance: false },
+  { text: "More than yes", feedback: "Awww hehe *pat pat*", advance: true },
+  { text: "Ask me later", feedback: "Not an option :p Try again.", advance: false }
+]);
+
+// Q3: How much do you miss me today?
+buildPlayfulQuestion('q3Options', 'q3Feedback', [
+  { text: "A little", feedback: "HAWWWW :_((", advance: false },
+  { text: "A lot", feedback: "Enhance your answer *-*", advance: false },
+  { text: "An unreasonable amount", feedback: "That's the correct answer bakaka.", advance: true }
+]);
+
+// ---------- scene galleries ----------
+// EDIT ME: replace each "src" below with your own image file name or URL,
+// e.g. src: "photos/us-1.jpg"  (put the image file next to this html file)
+function makePhotoHolder(src, caption){
+  const wrap = document.createElement('div');
+  wrap.className = 'photo-holder';
+  wrap.innerHTML = `
+    <div class="photo-frame"><img src="${src}" alt=""></div>
+    <div class="photo-caption" contenteditable="true" spellcheck="false">${caption}</div>
+  `;
+  return wrap;
+}
+
+const ppScenes = [
+  { src: "PnPdance_scene.png", caption: "You must allow me to tell you how ardently I admire and love you." },
+  { src: "pnp.png", caption: "Completely and perfectly incandescently happy." },
+  { src: "yhbmbas.png", caption: "You have bewitched me body and soul, and I love, I love, I love you. And wish from this day forth never to be parted from you." },
+  { src: "first.png", caption: "I cannot fix on the hour, or the spot, or the look or the words, which laid the foundation. It is too long ago. I was in the middle before I knew that I had begun." }
+];
+document.getElementById('ppGallery').append(...ppScenes.map(p => makePhotoHolder(p.src, p.caption)));
+
+const flowerScenes = [
+  { src: "Screenshot (251).png", caption: "I dont care what other people say. To me, you're a very kind and wonderful person." },
+  { src: "Screenshot (270).png", caption: "The confession.. dam" },
+  { src: "Screenshot (274).png", caption: "The quiet moment before the words finally came out." },
+  { src: "lastscene.png", caption: "I dont want to just watch you from afar. I want to walk right next to you." }
+];
+document.getElementById('flowerGallery').append(...flowerScenes.map(p => makePhotoHolder(p.src, p.caption)));
+
+// ---------- candles / make a wish ----------
+const CANDLE_COUNT = 20;
+const cake = document.getElementById('cake');
+const candlesMsg = document.getElementById('candlesMsg');
+let litCount = CANDLE_COUNT;
+for(let i = 0; i < CANDLE_COUNT; i++){
+  const btn = document.createElement('button');
+  btn.className = 'candle';
+  btn.setAttribute('aria-label', 'Blow out candle ' + (i + 1));
+  btn.innerHTML = '<div class="flame"></div><div class="smoke"></div><div class="stick"></div>';
+  btn.addEventListener('click', () => {
+    if(btn.classList.contains('out')) return;
+    btn.classList.add('out');
+    litCount--;
+    if(litCount === 0){
+      setTimeout(() => candlesMsg.classList.add('show'), 300);
+      setTimeout(nextStage, 1800);
+    }
+  });
+  cake.appendChild(btn);
+}
+
+// ---------- heart hunt ----------
+const grid = document.getElementById('heartGrid');
+const heartIndex = Math.floor(Math.random() * 16);
+for(let i = 0; i < 16; i++){
+  const cell = document.createElement('button');
+  cell.className = 'cell';
+  cell.addEventListener('click', () => {
+    if(cell.classList.contains('tried') || cell.classList.contains('found')) return;
+    if(i === heartIndex){
+      cell.classList.add('found');
+      cell.textContent = '❤️';
+      setTimeout(nextStage, 900);
+    } else {
+      cell.classList.add('tried');
+      cell.textContent = ':p baka';
+    }
+  });
+  grid.appendChild(cell);
+}
+
+// ---------- final: virtual hug ----------
+document.getElementById('hugBtn').addEventListener('click', () => {
+  for(let i = 0; i < 26; i++){
+    const h = document.createElement('div');
+    h.className = 'hearts-fall';
+    h.textContent = ['🤍','💗','✨'][Math.floor(Math.random()*3)];
+    h.style.left = Math.random()*100 + 'vw';
+    h.style.animationDuration = (2 + Math.random()*1.6) + 's';
+    h.style.animationDelay = (Math.random()*0.4) + 's';
+    document.body.appendChild(h);
+    h.addEventListener('animationend', () => h.remove());
+  }
+});
+
+// ---------- wish lantern ----------
+const wishForm = document.getElementById('wishForm');
+const wishInput = document.getElementById('wishInput');
+const wishSky = document.getElementById('wishSky');
+wishForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const text = wishInput.value.trim();
+  if(!text) return;
+  const lantern = document.createElement('div');
+  lantern.className = 'lantern';
+  lantern.textContent = text;
+  lantern.style.left = (40 + Math.random() * 20) + '%';
+  wishSky.appendChild(lantern);
+  lantern.addEventListener('animationend', () => lantern.remove());
+  wishInput.value = '';
+});
+
+</script>
+
+</body>
+</html>
